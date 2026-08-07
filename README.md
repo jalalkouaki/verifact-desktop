@@ -497,6 +497,7 @@ and why the runner asks you to type `yes` before including it.
 
 | Symptom | Fix |
 |---|---|
+| `ModuleNotFoundError: No module named 'click'` when running `python -m spacy download` | Upstream packaging issue: spaCy 3.8.x imports `click` but only depends on it via `typer`, which dropped it in 0.27.0. `requirements.txt` pins `click>=8.0` to fix this — make sure you installed with `pip install -r requirements.txt` rather than `pip install spacy` alone. |
 | `.bat` window flashes and closes | Run `python main.py` in a terminal to see the error. |
 | "No module named tkinter" | Reinstall Python with the *tcl/tk and IDLE* option ticked. |
 | Everything comes back amber | Check *Help → Browse Truth Database* for the metric names you actually have. Smart-suggest should offer a fix for typos; if it's off, re-enable `suggestions.enabled`. |
@@ -507,6 +508,50 @@ and why the runner asks you to type `yes` before including it.
 | Drag-and-drop does nothing | `pip install tkinterdnd2` (optional; the Import Files button always works). |
 | Excel export fails | `pip install openpyxl`. |
 | External DB shows unavailable | *Help → Backend Diagnostics* names the missing driver or the connection error. |
+
+---
+
+## Known limitations
+
+Honest notes on where the tool has edges. None of these block normal use, but
+they're worth knowing before you rely on it.
+
+**Ambiguous numbers can't always be resolved.** `1,234` means 1234 in London
+and 1.234 in Berlin. When a document contains no other numbers to establish
+its convention, Veri-Fact keeps *both* readings and passes a claim if either
+matches. That means it will never falsely fail — but in a genuinely
+ambiguous document it is slightly more forgiving than a strict checker.
+Set `number_formats.force_profile` if you need determinism.
+
+**Large files take time up front.** spaCy's NER runs over the whole document
+before verification starts, at roughly 4,000 claims per 17 seconds. The window
+stays responsive and the status bar updates throughout, but there is a pause
+before the first row appears. Disabling spaCy (deleting the model) falls back
+to the regex extractor, which is far faster and, on well-structured text,
+almost as accurate.
+
+**Region matching needs whole words.** Labels are matched with word
+boundaries, so a region literally named `A` or `B` won't be detected inside
+prose (`min_token_length` defaults to 2). Use labels of two characters or
+more, which the `Region_A` convention satisfies.
+
+**Timeframes assume a 2024 reference.** `demo_reference_year` is set to 2024
+so the shipped sample data resolves nicely for "last quarter". **Set it to `0`
+to use the real system clock** — you almost certainly want this for production
+use.
+
+**The formula checker is deliberately strict.** Only `+ - * / // % **` and
+`min max abs round sum avg sqrt` are permitted, and exponents are capped at 64.
+Anything else is rejected at load time rather than executed. This is a
+security boundary, not an oversight.
+
+**Verdicts depend on your tolerance setting.** The 1% default is arbitrary.
+A claim 0.9% off reads as PASS. Tune `verification.tolerance_percent` to match
+how precise your reporting actually needs to be.
+
+**Not tested on macOS or Linux.** The code uses no Windows-specific APIs
+except `os.startfile` (guarded with a fallback), so it should work, but the
+validation described in this README was performed on Windows only.
 
 ---
 

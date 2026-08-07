@@ -26,6 +26,12 @@ verifact.db-shm
 *.sqlite
 *.sqlite3
 
+# Timestamped copies written by migrations/migrate.py before it touches the
+# database, e.g. verifact.db.20260808_001816.backup. These are FULL COPIES of
+# your data - committing one would leak everything verifact.db would have.
+*.backup
+*.db.*.backup
+
 # Exported reports produced while using the app.
 verifact_results_*.csv
 verifact_results_*.xlsx

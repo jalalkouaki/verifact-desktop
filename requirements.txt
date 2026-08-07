@@ -23,6 +23,17 @@
 # model is unavailable - check Help > Backend Diagnostics to see which is live.
 spacy>=3.7,<4.0
 
+# REQUIRED BY SPACY, BUT NOT DECLARED BY IT.
+# ------------------------------------------------------------------
+# spaCy 3.8.x imports `click` directly (spacy/cli/_util.py) but only depends on
+# it transitively through `typer`. typer 0.27.0 REMOVED its click dependency,
+# so a fresh `pip install spacy` now succeeds while `import spacy` and
+# `python -m spacy download en_core_web_sm` both fail with:
+#     ModuleNotFoundError: No module named 'click'
+# Pinning click here makes the documented install work on a clean machine.
+# Remove once spaCy declares click itself (tracked upstream: explosion/spaCy).
+click>=8.0,<9.0
+
 # CSV and Excel parsing.
 pandas>=2.0,<3.0
 

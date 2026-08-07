@@ -1080,19 +1080,61 @@ class VeriFactApp:
             self._post("error", f"Batch verification failed:\n\n{traceback.format_exc()}")
             self._post("files_done", collected, problems)
 
+    #: Treeview rows inserted per main-thread slice. Tk has no bulk-insert API,
+    #: so a single 4,000-row loop blocks the event loop for seconds and the
+    #: window visibly freezes. Inserting in slices and yielding via after()
+    #: keeps the UI repainting throughout.
+    _INSERT_CHUNK = 250
+
     def _append_rows(self, rows: List[VerificationResult]) -> None:
-        """MAIN THREAD: insert result rows into the Treeview with colour tags."""
-        for item in rows:
-            iid = self.tree.insert("", "end", values=item.as_tuple(),
-                                   tags=(item.status,))
-            self.row_index[iid] = item
-            if item not in self.results:
-                self.results.append(item)
+        """MAIN THREAD: insert result rows into the Treeview with colour tags.
+
+        Large batches are inserted incrementally. ``after(0, ...)`` returns
+        control to Tk between slices so the progress bar, status bar and the
+        window itself stay responsive even on a 4,000-claim file.
+        """
+        if not rows:
+            return
+
+        # Track membership with a set of id()s. The previous
+        # ``if item not in self.results`` did a linear scan with dataclass
+        # __eq__ on every insert - O(n^2), which alone cost seconds at 4k rows.
+        if not hasattr(self, "_result_ids"):
+            self._result_ids = set()
+
+        pending = list(rows)
+
+        def insert_slice() -> None:
+            chunk, remaining = pending[:self._INSERT_CHUNK], pending[self._INSERT_CHUNK:]
+            for item in chunk:
+                try:
+                    iid = self.tree.insert("", "end", values=item.as_tuple(),
+                                           tags=(item.status,))
+                except tk.TclError:
+                    return  # window closed mid-insert
+                self.row_index[iid] = item
+                if id(item) not in self._result_ids:
+                    self._result_ids.add(id(item))
+                    self.results.append(item)
+
+            pending[:] = remaining
+            if pending:
+                try:
+                    self.root.after(0, insert_slice)
+                except tk.TclError:
+                    pass
+
+        insert_slice()
 
     def _finish_file_run(self, results: List[VerificationResult],
                          problems: List[str]) -> None:
         self._set_busy(False)
-        tally = summarise(self.results)
+
+        # Summarise the WORKER's authoritative list, not self.results.
+        # Treeview rows are inserted asynchronously in slices (see
+        # _append_rows), so at this moment self.results may still be filling
+        # up - summarising it would under-report the totals on large batches.
+        tally = summarise(results) if results else summarise(self.results)
         self.set_status(
             f"Batch complete: {tally['TOTAL']} claims - {tally[STATUS_PASS]} pass, "
             f"{tally[STATUS_FAIL]} fail, {tally[STATUS_WARN]} warning."
@@ -1114,6 +1156,15 @@ class VeriFactApp:
         self.tree.delete(*self.tree.get_children())
         self.row_index.clear()
         self.results.clear()
+        # Must be cleared too, or previously-seen results would be silently
+        # skipped when re-verified (they'd appear in the tree but never make it
+        # back into self.results, so exports would come out short).
+        if hasattr(self, "_result_ids"):
+            self._result_ids.clear()
+        self.carousel_iids = []
+        self.carousel_pos = -1
+        self.carousel_file = ""
+        self._update_carousel_label()
         self._set_detail("")
         self.set_status("Results cleared.")
 
@@ -1693,6 +1744,16 @@ class VeriFactApp:
         rows = self.results or self.text_results
         if not rows:
             messagebox.showinfo(APP_NAME, "There are no results to export yet.")
+            return
+
+        # Rows land in the table asynchronously (see _append_rows). Exporting
+        # mid-insert would silently write a partial file, which is exactly the
+        # kind of quiet data loss this tool exists to catch.
+        if self._busy():
+            messagebox.showinfo(
+                APP_NAME,
+                "Verification is still running - please wait for it to finish "
+                "before exporting, so the report contains every row.")
             return
 
         types = [("CSV file", "*.csv"),
