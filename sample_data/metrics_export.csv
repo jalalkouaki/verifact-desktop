@@ -1,0 +1,5 @@
+region,quarter,year,active_users,revenue,churn_rate,total_sales
+Region_A,Q3,2024,984.5,1750000,1.8,0
+Region_B,Q3,2024,2100,3050000,2.4,0
+Global,Q3,2024,3084.5,4800000,2.3,5250000
+Global,Q2,2024,2850,4350000,2.9,4900000

@@ -1,0 +1,103 @@
+{
+    "_README": "Veri-Fact Desktop configuration TEMPLATE. Copy this file to 'config.json' (or just launch the app once and it will create one for you), then edit the values below. config.json is git-ignored because it can hold database passwords - never commit it.",
+
+    "_QUICK_START": "You do not have to edit anything. Out of the box the app uses the bundled local SQLite database. Set external_database.enabled to true only when you want to verify against a real data warehouse.",
+
+    "local_database": {
+        "_comment": "Path is relative to main.py unless you give an absolute path. Created and seeded automatically on first launch.",
+        "path": "verifact.db",
+        "table": "financial_metrics",
+        "seed_on_first_run": true
+    },
+
+    "external_database": {
+        "_comment": "Optional enterprise warehouse. Veri-Fact queries this FIRST and falls back to local SQLite if the metric is not found. Drivers: postgresql=psycopg2, mysql=pymysql, mssql=pyodbc. If the driver is missing or the server is unreachable the app says so and quietly uses SQLite.",
+        "enabled": false,
+        "type": "postgresql",
+        "connection_string": "",
+        "host": "YOUR_DATABASE_HOST",
+        "port": 5432,
+        "database": "YOUR_DATABASE_NAME",
+        "user": "YOUR_READONLY_USERNAME",
+        "password": "YOUR_PASSWORD_HERE",
+        "odbc_driver": "ODBC Driver 17 for SQL Server",
+        "table": "financial_metrics",
+        "_columns_comment": "Rename map. LEFT = the name Veri-Fact uses internally. RIGHT = the real column name in YOUR table. If your amounts live in 'amt_usd', write \"value\": \"amt_usd\".",
+        "columns": {
+            "metric_name": "metric_name",
+            "region": "region",
+            "quarter": "quarter",
+            "year": "year",
+            "value": "value"
+        },
+        "timeout_seconds": 8
+    },
+
+    "verification": {
+        "_comment": "A claim is GREEN when |claimed - actual| / actual * 100 is below tolerance_percent. Set demo_reference_year to 0 to use the real system clock instead of the 2024 demo date.",
+        "tolerance_percent": 1.0,
+        "default_to_latest_period": true,
+        "demo_reference_year": 2024,
+        "demo_reference_quarter": 4
+    },
+
+    "regions": {
+        "_comment": "There is NO hardcoded list of world regions. Veri-Fact runs SELECT DISTINCT region against your database at startup and recognises whatever labels it finds - sales territories, business units, store IDs, legal entities, anything. 'fallback' is used only when that query returns nothing. 'synonyms' maps prose words onto a canonical label.",
+        "load_from_database": true,
+        "fallback": ["Global", "Region_A", "Region_B"],
+        "synonyms": {
+            "_example": "Region_A: [\"emea\", \"europe\", \"european\"]"
+        },
+        "min_token_length": 2
+    },
+
+    "derived_metrics": {
+        "_comment": "Metrics CALCULATED from other metrics. When a claim names one of these keys, Veri-Fact resolves each constituent for the claim's region and period, evaluates the expression, and compares against the result. Expressions are parsed to an AST and whitelisted - eval() is NEVER used. Allowed: numbers, metric names, + - * / // % ** and min/max/abs/round/sum/avg/sqrt. A missing constituent produces AMBER naming it, never a misleading red.",
+        "total_revenue": "region_a_revenue + region_b_revenue",
+        "arpu": "revenue / active_users"
+    },
+
+    "validation_rules": {
+        "_comment": "Sanity checks applied independently of the database. These catch mistakes the data cannot: a churn rate of 3800% is wrong even if no row contradicts it, and a negative user count is nonsense whatever the warehouse says. Set on_violation to 'fail' to make breaches RED instead of AMBER.",
+        "enabled": true,
+        "ranges": {
+            "churn_rate": { "min": 0.0, "max": 100.0, "unit": "percent" },
+            "gross_margin": { "min": -100.0, "max": 100.0, "unit": "percent" },
+            "conversion_rate": { "min": 0.0, "max": 100.0, "unit": "percent" },
+            "growth_rate": { "min": -100.0, "max": 1000.0, "unit": "percent" }
+        },
+        "non_negative": [
+            "active_users",
+            "customer_count",
+            "revenue",
+            "total_sales",
+            "visits",
+            "clicks",
+            "impressions"
+        ],
+        "percent_metric_suffixes": ["_rate", "_pct", "_percent", "margin"],
+        "on_violation": "warning"
+    },
+
+    "suggestions": {
+        "_comment": "Smart-suggest. When a metric name is not recognised (a typo like 'revenu', or an unfamiliar term), Veri-Fact fuzzy-matches it and asks 'Did you mean active_users?'. Answers are remembered in the metric_aliases table across sessions. Set prompt_user to false for unattended batch runs - unmatched metrics then simply stay AMBER.",
+        "enabled": true,
+        "threshold": 0.55,
+        "prompt_user": true,
+        "remember_choices": true,
+        "max_prompts_per_run": 12
+    },
+
+    "number_formats": {
+        "_comment": "Global number parsing. US 1,234,567.89 / European 1.234.567,89 / Swiss 1'234'567.89 / Indian 12,34,567.89 / spaced 1 234 567,89 are all detected automatically per document. Set force_profile to one of us|eu|swiss|indian|space to override detection.",
+        "auto_detect": true,
+        "force_profile": "",
+        "display_using_source_profile": false
+    },
+
+    "ui": {
+        "window_width": 1180,
+        "window_height": 760,
+        "theme": "clam"
+    }
+}

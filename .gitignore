@@ -1,0 +1,149 @@
+# ===========================================================================
+#  Veri-Fact Desktop - .gitignore
+# ---------------------------------------------------------------------------
+#  IMPORTANT: this file must exist BEFORE your first `git add .`
+#  It keeps two categories of file out of the public repository:
+#    1. Python build noise (__pycache__, *.pyc, venvs, caches)
+#    2. YOUR LOCAL DATA - config.json can contain database passwords, and
+#       verifact.db contains whatever figures you have verified.
+#  Commit config.json.template instead; the app creates config.json on
+#  first launch and verifact.db is regenerated automatically.
+# ===========================================================================
+
+# --- SECRETS AND LOCAL DATA (never commit these) --------------------------
+config.json
+*.env
+.env
+.env.*
+secrets.json
+credentials.json
+
+# Local SQLite database (regenerated + seeded on first launch).
+verifact.db
+verifact.db-journal
+verifact.db-wal
+verifact.db-shm
+*.sqlite
+*.sqlite3
+
+# Exported reports produced while using the app.
+verifact_results_*.csv
+verifact_results_*.xlsx
+verifact_results_*.json
+verifact_comparison_*.csv
+verifact_comparison_*.xlsx
+verifact_comparison_*.json
+
+# --- PYTHON ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Type checkers and linters
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# --- VIRTUAL ENVIRONMENTS --------------------------------------------------
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+.python-version
+
+# --- IDE / EDITOR ----------------------------------------------------------
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
+.spyderproject
+.spyproject
+.ropeproject
+
+# --- OS --------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# --- LOGS AND TEMPORARY FILES ---------------------------------------------
+*.log
+logs/
+*.tmp
+*.temp
+*.bak
+*.orig
+tmp/
+temp/
+
+# ...but the bundled sample .log IS part of the project. The blanket *.log
+# rule above would otherwise silently drop it from the repo, and the batch-tab
+# demo would be missing a file. Negation rules must come AFTER the rule they
+# override, which is why this sits here rather than next to the sample data.
+!sample_data/*.log
+
+# --- JUPYTER / NOTEBOOKS ---------------------------------------------------
+.ipynb_checkpoints
+profile_default/
+ipython_config.py
+
+# --- SPACY MODELS ----------------------------------------------------------
+# Models are installed via `python -m spacy download en_core_web_sm`,
+# never committed (they are ~12 MB+).
+en_core_web_sm/
+*.whl

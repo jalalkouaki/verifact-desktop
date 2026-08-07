@@ -1,0 +1,25 @@
+GLOBAL NUMBER FORMAT TEST
+=========================
+
+This file proves Veri-Fact reads numbers the way the whole world writes them,
+not just the US/UK way. Every line below states the SAME correct figure in a
+different convention, so all of them should come back GREEN.
+
+European (dot groups, comma decimal)
+    Global revenue in Q3 2024 was 4.800.000,00 and churn was 2,3%.
+
+Swiss (apostrophe groups)
+    Global revenue in Q3 2024 was 4'800'000.00 and churn was 2.3%.
+
+US / UK (comma groups, dot decimal)
+    Global revenue in Q3 2024 was 4,800,000.00 and churn was 2.3%.
+
+Space separated (SI / French style)
+    Global revenue in Q3 2024 was 4 800 000,00 and churn was 2,3%.
+
+Scale suffixes work with any convention
+    Global revenue in Q3 2024 was 4,8 Mio and total sales were 5,25M.
+    Global revenue in Q3 2024 was 4.8M and total sales were 5.25M.
+
+Region_A active users hit 984,5k in Q3 2024.
+Region_A active users hit 984.5k in Q3 2024.
